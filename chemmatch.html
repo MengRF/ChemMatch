@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ChemMatch · Grid (English) — Name ⇄ Formula</title>
+  <style>
+    :root{
+      --bg1:#f8fafc; --bg2:#eef2f7; --text:#0f172a; --muted:#64748b; --ring:#a5b4fc;
+      --tile:#ffffff; --tileBorder:#e5e7eb; --gap:8px; --tileSize:100px;
+    }
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{ margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; background:linear-gradient(var(--bg1),var(--bg2)); color:var(--text); }
+    .container{ max-width:1200px; margin:0 auto; padding:16px; }
+    h1{ margin:0 0 6px; font-size:24px; letter-spacing:.2px; }
+    .sub{ margin:0 0 12px; color:var(--muted); font-size:12px; }
+
+    .toolbar{ display:grid; grid-template-columns: 1fr auto; gap:10px; align-items:end; margin-bottom:10px; }
+    .controls{ display:flex; gap:6px; flex-wrap:wrap; }
+    button, select, input[type="text"]{ border:1px solid #e2e8f0; background:#111827; color:#fff; padding:8px 12px; border-radius:12px; cursor:pointer; }
+    select, input[type="text"]{ background:#fff; color:#111827; }
+    input[type="text"]{ width:200px; }
+    button[disabled]{ opacity:.6; cursor:not-allowed; }
+
+    .stats{ display:grid; grid-template-columns:repeat(6,1fr); gap:8px; margin:10px 0 12px; }
+    .card{ background:#fff; border:1px solid var(--tileBorder); border-radius:12px; padding:8px; text-align:center; }
+    .card .big{ font-weight:700; font-size:16px; }
+    .note{ color:var(--muted); font-size:12px; }
+
+    .boardWrap{ background:#fff; border:1px solid var(--tileBorder); border-radius:14px; padding:10px; }
+    .board{ display:grid; gap:var(--gap); justify-content:center; }
+
+    .tile{ position:relative; width:var(--tileSize); height:var(--tileSize); background:var(--tile); border:1px solid var(--tileBorder); border-radius:12px; padding:6px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:transform .06s ease, box-shadow .1s ease, outline-color .1s; outline:0 solid transparent; user-select:none; -webkit-user-select:none; }
+    .tile:hover{ transform:translateY(-1px); }
+    .tile.sel{ outline:4px solid var(--ring); }
+    .tile.gone{ visibility:hidden; }
+    .tile .content{ text-align:center; font-weight:600; line-height:1.12; word-break:break-word; color:#0f172a; }
+    .tile .badge{ position:absolute; top:4px; right:6px; font-size:9px; color:#475569; background:#e2e8f0; padding:1px 5px; border-radius:999px; font-weight:700; letter-spacing:.3px; }
+    .tile.name .content{ font-size: clamp(10px, 1.6vw, 16px); }
+    .tile.formula .content{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: clamp(11px, 1.8vw, 18px); }
+
+    .overlay{ position:fixed; inset:0; background:rgba(0,0,0,.4); display:none; align-items:center; justify-content:center; padding:18px; }
+    .overlay.show{ display:flex; }
+    .modal{ background:#fff; border-radius:14px; padding:16px; max-width:520px; width:100%; }
+    .muted{ color:var(--muted); font-size:13px; }
+    .list{ margin:10px 0 0; max-height:220px; overflow:auto; padding-left:18px; }
+
+    @media (max-width: 880px){ .stats{ grid-template-columns:repeat(3,1fr); } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="toolbar">
+      <div>
+        <h1>ChemMatch · Grid (English)</h1>
+        <p class="sub">A mix of <b>names</b> and <b>formulae</b>. Click one of each to clear. Finish fastest!</p>
+      </div>
+      <div class="controls">
+        <input id="player" type="text" placeholder="Player (optional)"/>
+        <select id="size">
+          <option value="4">4 × 4</option>
+          <option value="6" selected>6 × 6</option>
+          <option value="8">8 × 8</option>
+        </select>
+        <button id="start">New Game</button>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="card"><div class="note">Elapsed</div><div class="big" id="elapsed">0:00.0</div></div>
+      <div class="card"><div class="note">Moves</div><div class="big" id="moves">0</div></div>
+      <div class="card"><div class="note">Miss</div><div class="big" id="miss">0</div></div>
+      <div class="card"><div class="note">Remaining</div><div class="big" id="remain">0</div></div>
+      <div class="card"><div class="note">Best Time</div><div class="big" id="best">—</div><div class="note" id="bestMeta"></div></div>
+      <div class="card"><div class="note">Help</div><div class="note">Click ONE name + ONE formula. If they match, both disappear.</div></div>
+    </div>
+
+    <div class="boardWrap">
+      <div id="board" class="board"></div>
+    </div>
+  </div>
+
+  <div id="overlay" class="overlay">
+    <div class="modal">
+      <h2 id="endTitle" style="margin:0 0 8px;">Finished!</h2>
+      <div id="final" class="muted">Time 0:00.0 · Moves 0 · Miss 0</div>
+      <div id="wrongWrap" style="display:none;">
+        <div class="muted" style="margin:10px 0 6px; font-weight:600;">Wrong attempts</div>
+        <ul id="wrongList" class="list"></ul>
+      </div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:12px;">
+        <button id="again" style="background:#111827; color:#fff;">Play Again</button>
+        <button id="copy" style="background:#fff; color:#111827;">Copy Result</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ========================
+    // Dataset (subscript formulas)
+    // ========================
+    const PAIRS = [
+      { key:'H2O', name:'Water', formula:'H₂O' },
+      { key:'NaCl', name:'Sodium chloride', formula:'NaCl' },
+      { key:'CO2', name:'Carbon dioxide', formula:'CO₂' },
+      { key:'NH3', name:'Ammonia', formula:'NH₃' },
+      { key:'H2SO4', name:'Sulfuric acid', formula:'H₂SO₄' },
+      { key:'NaOH', name:'Sodium hydroxide', formula:'NaOH' },
+      { key:'HCl', name:'Hydrochloric acid', formula:'HCl' },
+      { key:'CH4', name:'Methane', formula:'CH₄' },
+      { key:'C2H5OH', name:'Ethanol', formula:'C₂H₅OH' },
+      { key:'CaCO3', name:'Calcium carbonate', formula:'CaCO₃' },
+      { key:'KNO3', name:'Potassium nitrate', formula:'KNO₃' },
+      { key:'Fe2O3', name:'Iron(III) oxide', formula:'Fe₂O₃' },
+      { key:'C6H12O6', name:'Glucose', formula:'C₆H₁₂O₆' },
+      { key:'C12H22O11', name:'Sucrose', formula:'C₁₂H₂₂O₁₁' },
+      { key:'CH3COOH', name:'Acetic acid', formula:'CH₃COOH' },
+      { key:'NaHCO3', name:'Sodium bicarbonate', formula:'NaHCO₃' },
+      { key:'Ca(OH)2', name:'Calcium hydroxide', formula:'Ca(OH)₂' },
+      { key:'MgSO4', name:'Magnesium sulfate', formula:'MgSO₄' },
+      { key:'CuSO4', name:'Copper(II) sulfate', formula:'CuSO₄' },
+      { key:'Na2CO3', name:'Sodium carbonate', formula:'Na₂CO₃' },
+      { key:'HNO3', name:'Nitric acid', formula:'HNO₃' },
+      { key:'H3PO4', name:'Phosphoric acid', formula:'H₃PO₄' },
+      { key:'O2', name:'Oxygen', formula:'O₂' },
+      { key:'N2', name:'Nitrogen', formula:'N₂' },
+      { key:'O3', name:'Ozone', formula:'O₃' },
+      { key:'H2O2', name:'Hydrogen peroxide', formula:'H₂O₂' },
+      { key:'NaClO', name:'Sodium hypochlorite', formula:'NaClO' },
+      { key:'NH4NO3', name:'Ammonium nitrate', formula:'NH₄NO₃' },
+      { key:'CaCl2', name:'Calcium chloride', formula:'CaCl₂' },
+      { key:'KMnO4', name:'Potassium permanganate', formula:'KMnO₄' },
+      { key:'Na2SO4', name:'Sodium sulfate', formula:'Na₂SO₄' },
+      { key:'SiO2', name:'Silicon dioxide', formula:'SiO₂' },
+      { key:'Al2O3', name:'Aluminum oxide', formula:'Al₂O₃' },
+      { key:'Ca3(PO4)2', name:'Calcium phosphate', formula:'Ca₃(PO₄)₂' },
+      { key:'NaNO3', name:'Sodium nitrate', formula:'NaNO₃' },
+      { key:'KCl', name:'Potassium chloride', formula:'KCl' },
+      { key:'MgO', name:'Magnesium oxide', formula:'MgO' },
+      { key:'CH3COONa', name:'Sodium acetate', formula:'CH₃COONa' },
+      { key:'NH4Cl', name:'Ammonium chloride', formula:'NH₄Cl' },
+      { key:'CaSO4', name:'Calcium sulfate', formula:'CaSO₄' }
+    ];
+
+    // ========================
+    // State & helpers
+    // ========================
+    let N = 6;                 // grid side length
+    let tiles = [];            // {id,key,type,text,removed}
+    let sel = null;            // index of selected tile
+    let lock = false;          // block input during pair check
+    let moves = 0, miss = 0;
+    let wrongs = [];           // {a,b}
+    let running = false, startTime = 0, elapsed = 0, timer = null;
+
+    const $ = s => document.querySelector(s);
+    const board = $('#board');
+
+    function shuffle(a){ a=[...a]; for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+    function fmt(ms){ const s=Math.floor(ms/1000), m=Math.floor(s/60), r=s%60, t=Math.floor((ms%1000)/100); return `${m}:${String(r).padStart(2,'0')}.${t}`; }
+    function bestKey(){ return `chemgrid_best_${N}`; }
+
+    // Compute tile size so the whole board fits the viewport without scrolling
+    function layout(){
+      const wrap = document.querySelector('.boardWrap');
+      const wrapStyles = getComputedStyle(wrap);
+      const padX = parseFloat(wrapStyles.paddingLeft) + parseFloat(wrapStyles.paddingRight);
+      const padY = parseFloat(wrapStyles.paddingTop) + parseFloat(wrapStyles.paddingBottom);
+
+      const container = document.querySelector('.container');
+      const rect = container.getBoundingClientRect();
+      const viewW = rect.width - 4; // safe padding
+      const headerH = document.querySelector('.toolbar').getBoundingClientRect().height;
+      const statsH = document.querySelector('.stats').getBoundingClientRect().height;
+      const viewportH = window.innerHeight;
+      const availH = viewportH - headerH - statsH - 56; // 56px buffer
+
+      const gap = parseFloat(getComputedStyle(board).gap || '8');
+      const sizeByW = Math.floor((viewW - padX - gap*(N-1)) / N);
+      const sizeByH = Math.floor((availH - padY - gap*(N-1)) / N);
+      const size = Math.max(36, Math.min(sizeByW, sizeByH)); // min 36px for readability
+
+      board.style.gridTemplateColumns = `repeat(${N}, ${size}px)`;
+      document.documentElement.style.setProperty('--tileSize', size + 'px');
+    }
+
+    function build(){
+      const pairsNeeded = (N*N)/2;
+      if(pairsNeeded > PAIRS.length){ alert('Not enough pairs in dataset for this size'); }
+      const take = shuffle(PAIRS).slice(0, pairsNeeded);
+      const t = []; let autoId = 1;
+      for(const p of take){
+        t.push({ id:autoId++, key:p.key, type:'name', text:p.name, removed:false });
+        t.push({ id:autoId++, key:p.key, type:'formula', text:p.formula, removed:false });
+      }
+      tiles = shuffle(t);
+    }
+
+    function paintStats(){
+      $('#moves').textContent = moves; $('#miss').textContent = miss; $('#remain').textContent = tiles.filter(x=>!x.removed).length/2; $('#elapsed').textContent = fmt(elapsed);
+      const b = localStorage.getItem(bestKey());
+      if(b){ const j=JSON.parse(b); $('#best').textContent = fmt(j.ms); $('#bestMeta').textContent = `${N}×${N} · ${j.name||'Anonymous'} · ${j.date}`; }
+      else { $('#best').textContent = '—'; $('#bestMeta').textContent = ''; }
+    }
+
+    function render(){
+      layout();
+      board.innerHTML = '';
+      tiles.forEach((t, i)=>{
+        const tile = document.createElement('div');
+        tile.className = `tile ${t.type} ${t.removed?'gone':''} ${sel===i?'sel':''}`;
+        tile.setAttribute('data-idx', i);
+        tile.tabIndex = 0; // keyboard focusable
+        const badge = document.createElement('div'); badge.className='badge'; badge.textContent = t.type==='name'?'NAME':'FORM';
+        const content = document.createElement('div'); content.className='content'; content.textContent = String(t.text||'?');
+        tile.appendChild(badge); tile.appendChild(content);
+        tile.addEventListener('click', onPick);
+        tile.addEventListener('keydown', (e)=>{ if(e.key==='Enter' || e.key===' '){ e.preventDefault(); onPick({ currentTarget: tile }); }});
+        // Disable pointer events only if not running or removed or lock
+        if(t.removed || !running || lock){ tile.style.pointerEvents='none'; tile.style.opacity = t.removed? 0 : 0.7; } else { tile.style.pointerEvents='auto'; tile.style.opacity = 1; }
+        board.appendChild(tile);
+      });
+      paintStats();
+    }
+
+    function onPick(e){
+      if(lock || !running) return;
+      const idx = Number(e.currentTarget.getAttribute('data-idx'));
+      if(sel===null){ sel = idx; render(); return; }
+      if(idx===sel){ sel=null; render(); return; }
+
+      moves++;
+      const A = tiles[sel];
+      const B = tiles[idx];
+      lock = true;
+
+      if(A.key===B.key && A.type!==B.type){
+        setTimeout(()=>{
+          A.removed = B.removed = true; sel = null; lock = false; render();
+          if(tiles.every(x=>x.removed)) finish();
+        }, 80);
+      } else {
+        setTimeout(()=>{
+          wrongs.push({a:A.text, b:B.text}); miss++; sel = null; lock = false; render();
+        }, 140);
+      }
+    }
+
+    function start(){
+      N = Number($('#size').value); moves=0; miss=0; wrongs=[]; sel=null; lock=false; running=true; startTime=performance.now(); elapsed=0;
+      build(); render();
+      if(timer) clearInterval(timer);
+      timer = setInterval(()=>{ if(running){ elapsed = performance.now()-startTime; $('#elapsed').textContent = fmt(elapsed); } }, 100);
+    }
+
+    function finish(){
+      running = false; if(timer) clearInterval(timer);
+      const name = ($('#player').value||'').trim();
+      const rec = { ms: elapsed, name, date: new Date().toLocaleString() };
+      const prev = localStorage.getItem(bestKey());
+      if(!prev || elapsed < JSON.parse(prev).ms){ localStorage.setItem(bestKey(), JSON.stringify(rec)); }
+      paintStats();
+      $('#endTitle').textContent = 'Finished! All cleared';
+      $('#final').textContent = `Time ${fmt(elapsed)} · Moves ${moves} · Miss ${miss}`;
+      const list = $('#wrongList'); list.innerHTML='';
+      if(wrongs.length){ $('#wrongWrap').style.display='block'; wrongs.forEach(w=>{ const li=document.createElement('li'); li.textContent = `${w.a} × ${w.b}`; list.appendChild(li); }); }
+      else { $('#wrongWrap').style.display='none'; }
+      $('#overlay').classList.add('show');
+    }
+
+    async function copyResult(){
+      const name = ($('#player').value||'').trim() || 'Anonymous';
+      const text = `ChemMatch Grid — ${N}x${N}\nPlayer: ${name}\nTime: ${fmt(elapsed)}\nMoves: ${moves}\nMiss: ${miss}`;
+      try{ await navigator.clipboard.writeText(text); }catch(e){}
+    }
+
+    // bindings
+    $('#start').addEventListener('click', ()=>{ $('#overlay').classList.remove('show'); start(); });
+    $('#again').addEventListener('click', ()=>{ $('#overlay').classList.remove('show'); start(); });
+    $('#copy').addEventListener('click', copyResult);
+    window.addEventListener('resize', ()=>{ if(tiles.length) render(); });
+
+    // initial (empty board)
+    render();
+  </script>
+</body>
+</html>

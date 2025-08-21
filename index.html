@@ -1,1 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ChemMatch Grid</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="topbar">
+    <div>
+      <label for="gridSize">Grid:</label>
+      <select id="gridSize">
+        <option value="4">4x4</option>
+        <option value="6">6x6</option>
+        <option value="8">8x8</option>
+      </select>
+      <button id="newGameBtn">New Game</button>
+    </div>
+    <div class="stats">
+      <span id="elapsed">Time: 0.0s</span>
+      <span id="moves">Moves: 0</span>
+      <span id="miss">Miss: 0</span>
+      <span id="remaining">Remaining: 0</span>
+      <span id="best">Best: --</span>
+    </div>
+  </div>
 
+  <div id="gameBoard" class="board"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>

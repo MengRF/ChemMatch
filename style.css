@@ -1,0 +1,78 @@
+:root {
+  --bg: #f8fafc;
+  --tile: #ffffff;
+  --tileBorder: #e2e8f0;
+  --accent: #2563eb;
+  --accentLight: #dbeafe;
+}
+
+body {
+  font-family: sans-serif;
+  background: var(--bg);
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+  background: #fff;
+  border-bottom: 1px solid var(--tileBorder);
+  flex-shrink: 0;
+}
+
+.topbar button {
+  margin-left: 8px;
+  padding: 4px 12px;
+  border: 1px solid var(--accent);
+  background: var(--accentLight);
+  color: var(--accent);
+  font-weight: bold;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.stats span {
+  margin-left: 12px;
+}
+
+.board {
+  flex-grow: 1;
+  display: grid;
+  justify-content: center;
+  align-content: center;
+  gap: 6px;
+  padding: 12px;
+}
+
+.tile {
+  background: var(--tile);
+  border: 1px solid var(--tileBorder);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+  color: #0f172a;
+  transition: background 0.2s, transform 0.1s;
+}
+
+.tile:hover {
+  background: var(--accentLight);
+}
+
+.tile.removed {
+  visibility: hidden;
+}
+
+.tile.selected {
+  background: var(--accentLight);
+  outline: 2px solid var(--accent);
+}

@@ -1,25 +1,8 @@
-const compounds = [
-  { name: "Water", formula: "H₂O" },
-  { name: "Carbon Dioxide", formula: "CO₂" },
-  { name: "Oxygen", formula: "O₂" },
-  { name: "Ammonia", formula: "NH₃" },
-  { name: "Methane", formula: "CH₄" },
-  { name: "Sulfuric Acid", formula: "H₂SO₄" },
-  { name: "Sodium Chloride", formula: "NaCl" },
-  { name: "Glucose", formula: "C₆H₁₂O₆" },
-  { name: "Calcium Carbonate", formula: "CaCO₃" },
-  { name: "Nitric Acid", formula: "HNO₃" },
-  { name: "Ethanol", formula: "C₂H₅OH" },
-  { name: "Hydrochloric Acid", formula: "HCl" },
-  { name: "Potassium Hydroxide", formula: "KOH" },
-  { name: "Magnesium Sulfate", formula: "MgSO₄" },
-  { name: "Acetic Acid", formula: "CH₃COOH" },
-  { name: "Phosphoric Acid", formula: "H₃PO₄" },
-  { name: "Ozone", formula: "O₃" },
-  { name: "Calcium Hydroxide", formula: "Ca(OH)₂" },
-  { name: "Sodium Bicarbonate", formula: "NaHCO₃" },
-  { name: "Hydrogen Peroxide", formula: "H₂O₂" }
-];
+// script.js
+import { compounds } from './data.js';
+
+// 下面保持你原来的逻辑（newGame、shuffle、selectTile……）
+// 如果之前变量名就是 compounds，不需要其它改动
 
 let board = document.getElementById("gameBoard");
 let newGameBtn = document.getElementById("newGameBtn");
